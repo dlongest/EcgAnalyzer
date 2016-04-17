@@ -17,20 +17,32 @@ namespace EcgAnalyzer
 
         public void Learn(string directory)
         {
+            // Find the filenames representing normal files and arrhythmia files. 
             var normalFiles = Directory.EnumerateFiles(directory).Where(a => a.EndsWith("txt") && !a.Contains("_"));
             var vfFiles = Directory.EnumerateFiles(directory).Where(a => a.EndsWith("txt") && a.Contains("_"));
 
+            // Get all the data in a combined double[][]
             var allData = ReadAll(normalFiles, vfFiles);
 
+            // Compute the K-means codebook from all of the signal data. If there are N different signals represented
+            // by allData (i.e. N arrays of some length M), then the codebook will be length N and contains a symbol
+            // that places the signal (treated as a vector) into the appropriate centroid (coded by the codebook). 
             var codebook = kmeans.Compute(allData);
 
+            // Now train an HMM to represent normal rhythms.  The magic number 10 corresponds to knowing that there 
+            // are at least 10 files in the "normal" set and thus the first 10 symbols in the codebook will 
+            // correspond to normal signals.  
             var hmmNormal = new HiddenMarkovModel(2, 3);
             new BaumWelchLearning(hmmNormal).Run(codebook.Take(10).ToArray());
 
+            // Evaluate probability of the 11th through 13th signals occurring.  Again, it is implicit that we have
+            // at least 13 normal files so these 3 will all be normal so we expect this probability to be relatively strong.
             var p = hmmNormal.Evaluate(codebook.Skip(10).Take(3).ToArray());
+
+            // Evaluate the probability of 3 non-normal signals occuring.  This probability should be much lower than p. 
             var p2 = hmmNormal.Evaluate(codebook.Skip(16).Take(3).ToArray());
 
-
+            // Repeat the training steps for arrhythmias and evaluate the probabilities for both types of rhythms. 
             var hmmVf = new HiddenMarkovModel(2, 3);
             new BaumWelchLearning(hmmVf).Run(codebook.Skip(16).Take(10).ToArray());
 
@@ -38,6 +50,14 @@ namespace EcgAnalyzer
             var p4 = hmmVf.Evaluate(codebook.Skip(15).Take(3).ToArray());
         }
 
+        /// <summary>
+        /// firstSet and secondSet are assumed to each contain an arbitrary (and possibly different) number of
+        /// CSV filenames containing ECG data.  Both are read into memory, then concatenated together, trimmed
+        /// such that all entries have the same number of signals.  
+        /// </summary>
+        /// <param name="firstSet"></param>
+        /// <param name="secondSet"></param>
+        /// <returns></returns>
         private double[][] ReadAll(IEnumerable<string> firstSet, IEnumerable<string> secondSet)
         {
             var first = Read(firstSet);
@@ -50,16 +70,35 @@ namespace EcgAnalyzer
             return allData.Select(a => a.Take(minimum).ToArray()).ToArray();
         }
 
+        /// <summary>
+        /// For all of the absolute CSV filenames, reads the signals from each file and returns them, one file
+        /// per record in the result (i.e. double[0] contains all the signals from the first file, etc). 
+        /// </summary>
+        /// <param name="csvFiles"></param>
+        /// <returns></returns>
         private double[][] Read(IEnumerable<string> csvFiles)
         {
             return csvFiles.Select(a => Read(a)).ToArray();
         }
 
+        /// <summary>
+        /// Returns a double[][] that is the result of concatenating second onto first. 
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        /// <returns></returns>
         private double[][] Concatenate(double[][] first, double[][] second)
         {
             return first.Concat(second).ToArray();
         }
 
+        /// <summary>
+        /// From csvFilename, loads all the waveform signals in order and returns them.  The CSV file is assumed
+        /// to have the waveform signal in the second column of the file.  The first column is ignored.
+        /// </summary>
+        /// <param name="csvFilename"></param>
+        /// <param name="hasHeaderLine"></param>
+        /// <returns></returns>
         private double[] Read(string csvFilename, bool hasHeaderLine = false)
         {
             var data = new List<double>();
@@ -79,24 +118,6 @@ namespace EcgAnalyzer
             }
 
             return data.ToArray();
-        }
-
-        private double[][] FeatureVectors(string controlDirectory, string infarctionDirectory, int windowSize)
-        {
-            var controlSessions = Load(controlDirectory).ToArray();
-
-            var infarctionSessions = Load(infarctionDirectory).ToArray();
-
-            var combinedSessions = controlSessions.Concat(infarctionSessions);
-
-            return combinedSessions.Select(a => a.AsAveragedValues("v1", windowSize).FirstHalf().FirstHalf().FirstHalf()).ToArray();
-        }
-
-        private IEnumerable<EcgMonitoringSession> Load(string directory)
-        {
-            var files = CsvFiles(directory);
-
-            return files.Select(f => EcgMonitoringSession.Load12LeadSessionFromFile(f));
         }
 
         private IEnumerable<string> CsvFiles(string directory)
