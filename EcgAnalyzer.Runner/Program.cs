@@ -10,6 +10,9 @@ namespace EcgAnalyzer.Runner
     {
         static void Main(string[] args)
         {
+
+            Console.WriteLine("Press enter to exit...");
+            Console.ReadLine();
         }
     }
 }

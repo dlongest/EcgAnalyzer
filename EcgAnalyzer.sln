@@ -5,6 +5,13 @@ VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcgAnalyzer.Runner", "EcgAnalyzer.Runner\EcgAnalyzer.Runner.csproj", "{95DD005C-F862-4F70-AC86-9DEDFF43914A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{3C18CAFB-7F62-40F7-A154-431AB6551A93}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\nuget.config = .nuget\nuget.config
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcgAnalyzer", "EcgAnalyzer\EcgAnalyzer.csproj", "{C24B3391-BACA-4647-95C6-24A21B1E84BB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +22,10 @@ Global
 		{95DD005C-F862-4F70-AC86-9DEDFF43914A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{95DD005C-F862-4F70-AC86-9DEDFF43914A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{95DD005C-F862-4F70-AC86-9DEDFF43914A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
