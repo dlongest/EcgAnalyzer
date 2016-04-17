@@ -11,9 +11,26 @@ using EcgAnalyzer.Extensions;
 
 namespace EcgAnalyzer
 {
-    public class EcgDataSet
+    public class WaveformClassifier
     {
         private readonly KMeans kmeans = new KMeans(3);
+
+        public void Learn(IEnumerable<IEnumerable<string>> csvFiles)
+        {
+            int label = 1;
+            foreach (var files in csvFiles)
+            {
+                var series = new WaveformSeries();
+
+                new CsvFileBasesdLoadLabeledWaveformReadings(files,
+                                                             tokens => new WaveformReading(TimeSpan.Parse(tokens[0]),
+                                                                                           Double.Parse(tokens[1])),
+                                                             label).Load();
+
+            }
+        }
+
+
 
         public void Learn(string directory)
         {

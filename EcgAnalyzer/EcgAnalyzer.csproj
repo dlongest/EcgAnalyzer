@@ -58,10 +58,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EcgDataSet.cs" />
-    <Compile Include="EcgLead.cs" />
-    <Compile Include="EcgLeadFactory.cs" />
-    <Compile Include="Patient.cs" />
+    <Compile Include="CsvFileBasesdLoadLabeledWaveformReadings.cs" />
+    <Compile Include="WaveformClassifier.cs" />
+    <Compile Include="WaveformSeries.cs" />
+    <Compile Include="ILoadLabeledWaveformReadings.cs" />
+    <Compile Include="LabeledWaveformReadings.cs" />
     <Compile Include="Extensions\ArrayExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WaveformReading.cs" />
