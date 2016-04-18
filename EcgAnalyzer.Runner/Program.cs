@@ -7,18 +7,30 @@ namespace EcgAnalyzer.Runner
     {
         static void Main(string[] args)
         {
-            var cu01Waveforms = PatientWaveformFactory.LoadSeriesForPatient(@"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu01",
-                                                                        @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu01",
-                                                                        "cu01",
-                                                                        tokens => CreateWaveformReadingFromCsvTokens(tokens));
+            var normalDirs = new string[] {
+                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu01",
+                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu11"
+                                          };
+            var arrhythmiaDirs = new string[] {
+                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu01",
+                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu11"
+                                          };
 
-            var cu11Waveforms = PatientWaveformFactory.LoadSeriesForPatient(@"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu11",
-                                                                        @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu11",
-                                                                        "cu11",
-                                                                        tokens => CreateWaveformReadingFromCsvTokens(tokens));
+
+            //var cu01Waveforms = PatientWaveformFactory.LoadSeriesForPatient(@"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu01",
+            //                                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu01",
+            //                                                            tokens => CreateWaveformReadingFromCsvTokens(tokens));
+
+            //var cu11Waveforms = PatientWaveformFactory.LoadSeriesForPatient(@"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu11",
+            //                                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu11",                                                                       
+            //                                                            tokens => CreateWaveformReadingFromCsvTokens(tokens));
 
 
-            new WaveformClassifier().Learn(cu01Waveforms);
+            var waveforms = PatientWaveformFactory.LoadSeriesForMultiplePatients(normalDirs, arrhythmiaDirs, tokens => CreateWaveformReadingFromCsvTokens(tokens));
+
+            new WaveformClassifier().Learn(waveforms);
+
+            // new WaveformClassifier().Learn(cu01Waveforms);
 
             Console.WriteLine("Press enter to exit...");
             Console.ReadLine();

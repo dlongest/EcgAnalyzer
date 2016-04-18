@@ -59,7 +59,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PatientWaveformFactory.cs" />
-    <Compile Include="PatientWaveforms.cs" />
+    <Compile Include="CategorizedWaveforms.cs" />
     <Compile Include="WaveformClassifier.cs" />
     <Compile Include="WaveformReadings.cs" />
     <Compile Include="Extensions\ArrayExtensions.cs" />

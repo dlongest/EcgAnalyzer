@@ -21,7 +21,7 @@ namespace EcgAnalyzer
         /// there will be N hidden Markov models, one per label.  
         /// </summary>
         /// <param name="csvFiles"></param>
-        public void Learn(PatientWaveforms patientWaveforms)
+        public void Learn(CategorizedWaveforms patientWaveforms)
         {
             var encoded = patientWaveforms.ClusterAll(this.kmeans);
 
@@ -45,6 +45,25 @@ namespace EcgAnalyzer
 
             Console.WriteLine("\nP(normal sequence) = " + p3);
             Console.WriteLine("P(arrhythmia) = " + p4);
+        }
+
+        public void Learn(CategorizedWaveformCollection waveforms)
+        {
+            var encoded = waveforms.ClusterAll(kmeans);
+
+            var normalSeqs = encoded.Select(a => a.Normal.Take(10).ToArray()).ToArray();
+
+            var hmm = new HiddenMarkovModel(5, 5);
+            new BaumWelchLearning(hmm).Run(normalSeqs);
+
+            var testNormal = encoded.Select(a => a.Normal.Skip(10).Take(3).ToArray()).ToArray();
+            var testArr = encoded.Select(a => a.Arrhythmias.Skip(10).Take(3).ToArray()).ToArray();
+
+            Console.WriteLine("LL = " + hmm.Evaluate(testNormal.First()));
+            Console.WriteLine("LL = " + hmm.Evaluate(testNormal.Last()));
+
+            Console.WriteLine("LL = " + hmm.Evaluate(testArr.First()));
+            Console.WriteLine("LL = " + hmm.Evaluate(testArr.Last()));
         }
 
 

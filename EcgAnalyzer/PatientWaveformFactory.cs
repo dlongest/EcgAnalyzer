@@ -11,9 +11,8 @@ namespace EcgAnalyzer
     public static class PatientWaveformFactory
     {
 
-       public static PatientWaveforms LoadSeriesForPatient(string patientNormalRhythmDirectory, 
-                                                           string patientArrhythmiaDirectory,
-                                                           string patientName,
+       public static CategorizedWaveforms LoadSeriesForPatient(string patientNormalRhythmDirectory, 
+                                                           string patientArrhythmiaDirectory,                                                         
                                                            Func<string[], WaveformReading> createReadingFromCsvTokens,
                                                            bool hasHeaderLine = false)
         {
@@ -23,12 +22,23 @@ namespace EcgAnalyzer
             var arrhythmias = Directory.EnumerateFiles(patientArrhythmiaDirectory)
                                   .Select(file => CreateReadingsFromSingleFile(file, createReadingFromCsvTokens, hasHeaderLine));
 
-            return new PatientWaveforms(patientName, normal, arrhythmias);
+            return new CategorizedWaveforms(normal, arrhythmias);
+        }
+
+        public static CategorizedWaveformCollection LoadSeriesForMultiplePatients(IEnumerable<string> normalRhythmDirectories, 
+                                                                                      IEnumerable<string> arrhythmiaDirectories,
+                                                                                      Func<string[], WaveformReading> createReadingFromCsvTokens,
+                                                                                      bool hasHeaderLine = false)
+        {
+            if (normalRhythmDirectories.Count() != arrhythmiaDirectories.Count())
+                throw new ArgumentException("Number of normal directories must match the number of arrhythmia directories");
+
+            return new CategorizedWaveformCollection(normalRhythmDirectories.Zip(arrhythmiaDirectories, (n, a) => LoadSeriesForPatient(n, a, createReadingFromCsvTokens, hasHeaderLine)));
         }
 
         private static IEnumerable<WaveformReadings> CreateWaveformReadingsFromPatientFiles(IEnumerable<string> csvFiles,
-                                                                                                   Func<string[], WaveformReading> createReadingFromCsvTokens,
-                                                                                                   bool hasHeaderLine)
+                                                                                            Func<string[], WaveformReading> createReadingFromCsvTokens,
+                                                                                            bool hasHeaderLine)
         {
             return csvFiles.Select(file => CreateReadingsFromSingleFile(file, createReadingFromCsvTokens, hasHeaderLine));
         }
