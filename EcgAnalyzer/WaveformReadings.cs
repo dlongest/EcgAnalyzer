@@ -18,15 +18,13 @@ namespace EcgAnalyzer
     /// unknown with respect to their label or classification (i.e. no annotations are available), then simply use
     /// the same label for every waveform reading and it will treat them like one block of readings. 
     /// </summary>
-    public class LabeledWaveformReadings : IEnumerable<WaveformReading>
+    public class WaveformReadings : IEnumerable<WaveformReading>
     {
         private readonly IList<WaveformReading> readings;
-        private readonly int label;
 
-        public LabeledWaveformReadings(int label)
+        public WaveformReadings()
         {
             this.readings = new List<WaveformReading>();
-            this.label = label;
         }
 
         public void Add(WaveformReading reading)
@@ -44,6 +42,9 @@ namespace EcgAnalyzer
             return this.GetEnumerator();
         }
 
-        public int Label { get { return this.label; } }     
+        public double[] AsArray()
+        {
+            return this.readings.OrderBy(a => a.ElapsedTime).Select(a => a.Millivolts).ToArray();
+        }
     }
 }

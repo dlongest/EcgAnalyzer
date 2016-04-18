@@ -13,23 +13,45 @@ namespace EcgAnalyzer
 {
     public class WaveformClassifier
     {
-        private readonly KMeans kmeans = new KMeans(3);
+        private readonly KMeans kmeans = new KMeans(5);
 
-        public void Learn(IEnumerable<IEnumerable<string>> csvFiles)
+        /// <summary>
+        /// Learn trains multiple Hidden Markov Models using the provided csvFiles as input.  Each top-level collection is intended
+        /// to represent a different label and each subsequent collection advances the label identifier by 1.  Once Learn completes
+        /// there will be N hidden Markov models, one per label.  
+        /// </summary>
+        /// <param name="csvFiles"></param>
+        public void Learn(PatientWaveforms patientWaveforms)
         {
-            int label = 1;
-            foreach (var files in csvFiles)
-            {
-                var series = new WaveformSeries();
+            var encoded = patientWaveforms.ClusterAll(this.kmeans);
 
-                new CsvFileBasesdLoadLabeledWaveformReadings(files,
-                                                             tokens => new WaveformReading(TimeSpan.Parse(tokens[0]),
-                                                                                           Double.Parse(tokens[1])),
-                                                             label).Load();
+            var normalSequence = encoded.Normal.Take(10);
+            var arrhythmiaSequence = encoded.Arrhythmias.Take(10);
+            
+            var hmmNormal = new HiddenMarkovModel(5, 5);
+            new BaumWelchLearning(hmmNormal).Run(normalSequence.ToArray());
 
-            }
+            var p = hmmNormal.Evaluate(encoded.Normal.Skip(10).Take(3).ToArray());
+            var p2 = hmmNormal.Evaluate(encoded.Arrhythmias.Skip(10).Take(3).ToArray());
+
+            Console.WriteLine("P(normal sequence) = " + p);
+            Console.WriteLine("P(arrhythmia) = " + p2);
+
+            var hmmArrhythmia = new HiddenMarkovModel(5, 5);
+            new BaumWelchLearning(hmmArrhythmia).Run(arrhythmiaSequence.ToArray());
+
+            var p3 = hmmArrhythmia.Evaluate(encoded.Normal.Skip(10).Take(3).ToArray());
+            var p4 = hmmArrhythmia.Evaluate(encoded.Arrhythmias.Skip(10).Take(3).ToArray());
+
+            Console.WriteLine("\nP(normal sequence) = " + p3);
+            Console.WriteLine("P(arrhythmia) = " + p4);
         }
 
+
+        private int[] Encode(IEnumerable<WaveformReadings> readings)
+        {
+            return readings.Select(r => this.kmeans.Clusters.Nearest(r.AsArray())).ToArray();
+        }
 
 
         public void Learn(string directory)

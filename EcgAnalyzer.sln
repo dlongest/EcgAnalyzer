@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{3C18CA
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcgAnalyzer", "EcgAnalyzer\EcgAnalyzer.csproj", "{C24B3391-BACA-4647-95C6-24A21B1E84BB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcgAnalyzer.Tests", "EcgAnalyzer.Tests\EcgAnalyzer.Tests.csproj", "{4EFF3674-075F-442D-BAE2-5597D9285736}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C24B3391-BACA-4647-95C6-24A21B1E84BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4EFF3674-075F-442D-BAE2-5597D9285736}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4EFF3674-075F-442D-BAE2-5597D9285736}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4EFF3674-075F-442D-BAE2-5597D9285736}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4EFF3674-075F-442D-BAE2-5597D9285736}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
