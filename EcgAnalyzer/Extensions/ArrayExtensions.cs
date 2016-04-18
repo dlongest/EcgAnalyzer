@@ -116,13 +116,16 @@ namespace EcgAnalyzer.Extensions
             if (partitionSize <= overlap)
                 throw new ArgumentException("partitionSize must be greater than overlap");
 
-            int numberPartitions = source.Count() / overlap;
+           // int numberPartitions = (source.Count() / overlap) + 1;
 
-            foreach (var indexForNextPartition in Enumerable.Range(0, numberPartitions).Select(a => a * overlap))
+            int startIndex = 0;
+            int step = partitionSize - overlap;
+            
+            while (startIndex + partitionSize <= source.Count())
             {
-                var s = source.Subset(indexForNextPartition, partitionSize);
-
+                var s = source.Subset(startIndex, partitionSize);
                 yield return s;
+                startIndex += step;
             }
         }
 
