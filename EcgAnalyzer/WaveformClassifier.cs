@@ -54,6 +54,11 @@ namespace EcgAnalyzer
         }
 
 
+        /// <summary>
+        /// IGNORE THIS METHOD - IT WAS THE INITIAL SAMPLE METHOD.  IT WILL BE LEFT TEMPORARILY AS A GUIDE
+        /// BUT ALL ACTIVE WORK IS BASED ON THE OVERLOAD OF LEARN WITH PATIENTWAVEFORMS AS PARAMETERS
+        /// </summary>
+        /// <param name="directory"></param>
         public void Learn(string directory)
         {
             // Find the filenames representing normal files and arrhythmia files. 
