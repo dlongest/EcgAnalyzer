@@ -23,7 +23,7 @@ namespace EcgAnalyzer
                                     int numberStates,
                                     int numberSymbols)
         {
-            if (this.trainingRhythms == null)
+            if (trainingRhythms == null)
             {
                 throw new ArgumentNullException("trainingRhythms");
             }
