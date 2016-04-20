@@ -58,8 +58,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CategorizedWaveformBuilder.cs" />
-    <Compile Include="CategorizedWaveforms.cs" />
+    <Compile Include="WaveformModelBuilder.cs" />
+    <Compile Include="WaveformModels.cs" />
     <Compile Include="WaveformReadings.cs" />
     <Compile Include="Extensions\ArrayExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

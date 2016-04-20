@@ -24,7 +24,7 @@ namespace EcgAnalyzer.Runner
             var arrRhythms = arrFiles.Select(f => WaveformReadings.CreateWaveformReadingsFromPatientFiles(f, tokens => CreateWaveformReadingFromCsvTokens(tokens)));
 
 
-            var cw = new CategorizedWaveformBuilder().AddRhythms(1, normalRhythms.First().Take(10))
+            var cw = new WaveformModelBuilder().AddRhythms(1, normalRhythms.First().Take(10))
                                                      .AddRhythms(2, arrRhythms.First().Take(10))
                                                      .WithModelParameters(5, 5)
                                                      .Build();

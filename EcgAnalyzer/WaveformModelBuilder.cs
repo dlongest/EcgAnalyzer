@@ -8,18 +8,18 @@ using System.Threading.Tasks;
 
 namespace EcgAnalyzer
 {
-    public class CategorizedWaveformBuilder
+    public class WaveformModelBuilder
     {
         private readonly IDictionary<int, IEnumerable<WaveformReadings>> rhythms;
         private int stateCount;
         private int symbolCount;
 
-        public CategorizedWaveformBuilder()
+        public WaveformModelBuilder()
         {
             this.rhythms = new Dictionary<int, IEnumerable<WaveformReadings>>();
         }
 
-        public CategorizedWaveformBuilder AddRhythms(int label,
+        public WaveformModelBuilder AddRhythms(int label,
                                                      IEnumerable<WaveformReadings> waveformSequences)
         {
             if (!rhythms.ContainsKey(label))
@@ -32,7 +32,7 @@ namespace EcgAnalyzer
             return this;
         }
 
-        public CategorizedWaveformBuilder WithModelParameters(int states, int symbols)
+        public WaveformModelBuilder WithModelParameters(int states, int symbols)
         {
             this.stateCount = states;
             this.symbolCount = symbols;
@@ -41,7 +41,7 @@ namespace EcgAnalyzer
         }
 
 
-        public CategorizedWaveforms Build()
+        public WaveformModels Build()
         {
             if (this.stateCount == 0)
             {
@@ -53,7 +53,7 @@ namespace EcgAnalyzer
                 throw new InvalidOperationException("Unable to create CategorizedWaveforms - please use WithSymbolCount to set the number of symbols for the underlying model");
             }
 
-            return new CategorizedWaveforms(this.rhythms, this.stateCount, this.symbolCount);
+            return new WaveformModels(this.rhythms, this.stateCount, this.symbolCount);
         }
     }
 }

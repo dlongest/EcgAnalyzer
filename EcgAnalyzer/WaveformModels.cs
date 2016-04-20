@@ -10,7 +10,7 @@ using Accord.Statistics.Models.Markov.Learning;
 
 namespace EcgAnalyzer
 {
-    public class CategorizedWaveforms
+    public class WaveformModels
     {
         private int maximumWaveformLength;
         private readonly KMeans kmeans;
@@ -19,7 +19,7 @@ namespace EcgAnalyzer
         private readonly IDictionary<int, IEnumerable<WaveformReadings>> trainingRhythms;
         private readonly IDictionary<int, HiddenMarkovModel> models;
 
-        public CategorizedWaveforms(IDictionary<int, IEnumerable<WaveformReadings>> trainingRhythms,
+        public WaveformModels(IDictionary<int, IEnumerable<WaveformReadings>> trainingRhythms,
                                     int numberStates,
                                     int numberSymbols)
         {
