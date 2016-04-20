@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace EcgAnalyzer.Runner
@@ -16,21 +17,22 @@ namespace EcgAnalyzer.Runner
                                             @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu11"
                                           };
 
+            var normalFiles = normalDirs.Select(dir => System.IO.Directory.EnumerateFiles(dir));
+            var arrFiles = arrhythmiaDirs.Select(dir => System.IO.Directory.EnumerateFiles(dir));
 
-            //var cu01Waveforms = PatientWaveformFactory.LoadSeriesForPatient(@"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu01",
-            //                                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu01",
-            //                                                            tokens => CreateWaveformReadingFromCsvTokens(tokens));
-
-            //var cu11Waveforms = PatientWaveformFactory.LoadSeriesForPatient(@"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Normal\cu11",
-            //                                                            @"C:\Users\dcl\Documents\GitHub\EcgAnalyzer\Data\Arrhythmia\cu11",                                                                       
-            //                                                            tokens => CreateWaveformReadingFromCsvTokens(tokens));
+            var normalRhythms = normalFiles.Select(f => WaveformReadings.CreateWaveformReadingsFromPatientFiles(f, tokens => CreateWaveformReadingFromCsvTokens(tokens)));
+            var arrRhythms = arrFiles.Select(f => WaveformReadings.CreateWaveformReadingsFromPatientFiles(f, tokens => CreateWaveformReadingFromCsvTokens(tokens)));
 
 
-            var waveforms = PatientWaveformFactory.LoadSeriesForMultiplePatients(normalDirs, arrhythmiaDirs, tokens => CreateWaveformReadingFromCsvTokens(tokens));
+            var cw = new CategorizedWaveformBuilder().AddRhythms(1, normalRhythms.First().Take(10))
+                                                     .AddRhythms(2, arrRhythms.First().Take(10))
+                                                     .WithModelParameters(5, 5)
+                                                     .Build();
 
-            new WaveformClassifier().Learn(waveforms);
+            cw.Learn();
+            var expectClass1 = cw.Predict(normalRhythms.First().Skip(10).Take(3));
+            var expectClass2 = cw.Predict(arrRhythms.First().Skip(10).Take(3));
 
-            // new WaveformClassifier().Learn(cu01Waveforms);
 
             Console.WriteLine("Press enter to exit...");
             Console.ReadLine();

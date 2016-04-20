@@ -8,15 +8,8 @@ using System.Threading.Tasks;
 namespace EcgAnalyzer
 {
     /// <summary>
-    /// LabeledWaveformReadings represents a collection of WaveformReadings with a label attached.  The readings
-    /// are presumed to be contiguous and the entire collection of readings is indicative of some larger construct
-    /// that is categorized under label.  There are lots of ways to categorize signals as both waves (waveform parts
-    /// like P, R, and Q orcomplex waveforms like PR, QRS, and ST) as well as in more diagnostic terms such as
-    /// normal, ventricular tachycardia, atrial fibrillation, etc.  To cover the wide uses that readings can be 
-    /// categorized under, LabeledWaveformReadings uses an integer label and it's up to the client to decide
-    /// what the meaning of the label means within an application context. If the readings being loaded are
-    /// unknown with respect to their label or classification (i.e. no annotations are available), then simply use
-    /// the same label for every waveform reading and it will treat them like one block of readings. 
+    /// WaveformReadings are presumed to be contiguous and the entire collection of readings is indicative of some larger 
+    /// construct or rhythm pattern. 
     /// </summary>
     public class WaveformReadings : IEnumerable<WaveformReading>
     {
@@ -42,9 +35,38 @@ namespace EcgAnalyzer
             return this.GetEnumerator();
         }
 
+        /// <summary>
+        /// Returns the millivolt signals for the contained readings in order of their occurrence
+        /// in real life (i.e. ordered by ElapsedTime of the readings). 
+        /// </summary>
+        /// <returns></returns>
         public double[] AsArray()
         {
             return this.readings.OrderBy(a => a.ElapsedTime).Select(a => a.Millivolts).ToArray();
+        }
+
+        public static IEnumerable<WaveformReadings> CreateWaveformReadingsFromPatientFiles(IEnumerable<string> csvFiles,
+                                                                                           Func<string[], WaveformReading> createReadingFromCsvTokens)
+        {
+            return csvFiles.Select(file => CreateReadingsFromSingleFile(file, createReadingFromCsvTokens));
+        }
+
+        public static WaveformReadings CreateReadingsFromSingleFile(string csvFile,
+                                                                     Func<string[], WaveformReading> createReadingFromCsvTokens)
+        {
+            var readings = new WaveformReadings();
+
+            using (var reader = new System.IO.StreamReader(csvFile))
+            {
+                while (!reader.EndOfStream)
+                {
+                    var reading = createReadingFromCsvTokens(reader.ReadLine().Split(new string[] { "," }, StringSplitOptions.None));
+
+                    readings.Add(reading);
+                }
+            }
+
+            return readings;
         }
     }
 }

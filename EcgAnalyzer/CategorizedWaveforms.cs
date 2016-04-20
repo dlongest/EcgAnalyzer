@@ -5,27 +5,81 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using EcgAnalyzer.Extensions;
+using Accord.Statistics.Models.Markov;
+using Accord.Statistics.Models.Markov.Learning;
 
 namespace EcgAnalyzer
 {
     public class CategorizedWaveforms
     {
-        public CategorizedWaveforms(IEnumerable<WaveformReadings> normal, IEnumerable<WaveformReadings> arrhythmias)
+        private int maximumWaveformLength;
+        private readonly KMeans kmeans;
+        private readonly int numberStates;
+        private readonly int numberSymbols;
+        private readonly IDictionary<int, IEnumerable<WaveformReadings>> trainingRhythms;
+        private readonly IDictionary<int, HiddenMarkovModel> models;
+
+        public CategorizedWaveforms(IDictionary<int, IEnumerable<WaveformReadings>> trainingRhythms,
+                                    int numberStates,
+                                    int numberSymbols)
         {
-            this.NormalRhythms = normal;
-            this.Arrhythmias = arrhythmias;
+            if (this.trainingRhythms == null)
+            {
+                throw new ArgumentNullException("trainingRhythms");
+            }
+
+            if (numberStates == 0)
+            {
+                throw new ArgumentException("numberStates must be > 0", "numberStates");
+            }
+
+            if (numberSymbols == 0)
+            {
+                throw new ArgumentException("numberSymbols must be > 0", "numberSymbols");
+            }
+
+            this.trainingRhythms = trainingRhythms;
+            this.kmeans = new KMeans(numberSymbols);
+            this.numberStates = numberStates;
+            this.numberSymbols = numberSymbols;
+
+            this.models = this.trainingRhythms.ToDictionary(a => a.Key, a => new HiddenMarkovModel(numberStates, numberSymbols));
         }
 
 
-    public IEnumerable<WaveformReadings> NormalRhythms { get; private set; }
-
-    public IEnumerable<WaveformReadings> Arrhythmias { get; private set; }
-
-        public IEnumerable<WaveformReadings> Combine()
+        public IEnumerable<WaveformReadings> TrainingRhythms(int label)
         {
-            return this.NormalRhythms.Concat(Arrhythmias);
+            return this.trainingRhythms[label];
         }
 
+        public int[] Labels { get { return this.trainingRhythms.Keys.OrderBy(a => a).ToArray(); } }
+
+        /// <summary>
+        /// Combines all of the training rhythms into one single sequence by concatenating each 
+        /// together.  The reason for this is to build a single sequence that can be used for clustering
+        /// purposes.  
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerable<WaveformReadings> Combine()
+        {
+            return this.trainingRhythms.Aggregate(new List<WaveformReadings>(),
+                                           (acc, seq) =>
+                                           {
+                                               acc.AddRange(seq.Value);
+                                               return acc;
+                                           },
+                                           acc => acc);
+        }
+
+        public void Learn()
+        {
+            var encodedTrainingRhythms = ClusterAll(this.kmeans);
+
+            foreach (var encodedRhythm in encodedTrainingRhythms)
+            {
+                new BaumWelchLearning(this.models[encodedRhythm.Key]).Run(encodedRhythm.Value);
+            }
+        }
 
         /// <summary>
         /// Given the KMeans instance, ClusterAll will combine all of the contained WaveformReadings into a single sequence
@@ -37,89 +91,91 @@ namespace EcgAnalyzer
         /// </summary>
         /// <param name="kmeans"></param>
         /// <returns></returns>
-        public QuantizedWaveforms ClusterAll(KMeans kmeans)
+        public IDictionary<int, int[]> ClusterAll(KMeans kmeans)
         {
             var combined = this.Combine().AsArray();
-            var minimum = combined.MinimumWaveformLength();
-            var trimmed = combined.Trim(minimum);
+            this.maximumWaveformLength = combined.MinimumWaveformLength();
+            var trimmed = combined.Trim(this.maximumWaveformLength);
 
             var codebook = kmeans.Compute(trimmed);
 
-            var normalEncoded = codebook.Take(this.NormalRhythms.Count()).ToArray();
-            var arrhythmiasEncoded = codebook.Skip(this.NormalRhythms.Count()).Take(this.Arrhythmias.Count()).ToArray();
+            return this.trainingRhythms.Select(a => new { Label = a.Key, EncodedSequence = Encode(a.Value) })
+                                       .ToDictionary(a => a.Label, a => a.EncodedSequence);
 
-            return new QuantizedWaveforms
-            {
-                Normal = normalEncoded,
-                Arrhythmias = arrhythmiasEncoded
-            };
         }
-    }   
 
-    public class CategorizedWaveformCollection
-    {
-        private IList<CategorizedWaveforms> waveforms;
 
-        public CategorizedWaveformCollection(IEnumerable<CategorizedWaveforms> waveforms)
+        /// <summary>
+        /// Given a sequence of rhythms, predicts the class that the sequence best fits into. Returns
+        /// 1 if the sequence are normal rhythms, 2 if they are arrhythmias.  The waveform sequence
+        /// is a collection of WaveformReadings instances where each instance in the collection is itself
+        /// a collection of WaveformReading instances.  In other words, we have a sequence of sequences.  
+        /// Prediction requires two steps:
+        /// - Each instance in the collection has to be quantized to a discrete representation
+        /// - Now the sequence of quantizations can be used for prediction
+        /// </summary>
+        /// <param name="waveformSequence"></param>
+        /// <returns></returns>
+        public int Predict(IEnumerable<WaveformReadings> waveformSequences)
         {
-            if (waveforms == null)
-                this.waveforms = new List<CategorizedWaveforms>();
-            else
-                this.waveforms = waveforms.ToList();
+            var logLikelihoods = ComputeLogLikelihoods(waveformSequences);
+
+            return logLikelihoods.OrderByDescending(a => a.Value).First().Key;
         }
 
-        public void Add(CategorizedWaveforms waveform)
+        public double Evaluate(IEnumerable<WaveformReadings> waveformSequences)
         {
-            this.waveforms.Add(waveform);
+            var logLikelihoods = ComputeLogLikelihoods(waveformSequences);
+
+            return logLikelihoods.OrderByDescending(a => a.Value).First().Value;
         }
 
-        public IEnumerable<CategorizedWaveforms> Waveforms
+        private IDictionary<int, double> ComputeLogLikelihoods(IEnumerable<WaveformReadings> waveformSequences)
         {
-            get
-            {
-                return this.waveforms;
-            }
+            var encodedSequence = Encode(waveformSequences);
+
+            var logLikelihoods = this.models.Select(a => new { Label = a.Key, LogLikelihood = a.Value.Evaluate(encodedSequence) });
+
+            return logLikelihoods.ToDictionary(a => a.Label, a => a.LogLikelihood);
         }
 
-        public IEnumerable<QuantizedWaveforms> ClusterAll(KMeans kmeans)
+
+        /// <summary>
+        /// Given a collection of N WaveformReadings instances, returns an int[] of size N where each position is
+        /// the code for the corresponding WaveformReadings.  
+        /// </summary>
+        /// <param name="readings"></param>
+        /// <returns></returns>
+        private int[] Encode(IEnumerable<WaveformReadings> waveformSequences)
         {
-            var combined = this.waveforms.Select(a => a.Combine().AsArray());
-            var minimum = combined.Select(a => a.MinimumWaveformLength()).Min();
-            var trimmed = combined.Select(a => a.Trim(minimum));
-            
-            var codebook = kmeans.Compute(trimmed.SelectMany(b => b).ToArray());
+            var trimmed = AsTrimmedArray(waveformSequences);
 
-            var normalEncoded = this.waveforms.Select(a => a.NormalRhythms.AsArray()).ToArray()
-                                              .Select(b => b.Trim(minimum))
-                                              .Select(c => kmeans.Clusters.Nearest(c));
-
-            var arrhythmiasEncoded = this.waveforms.Select(a => a.Arrhythmias.AsArray()).ToArray()
-                                                   .Select(b => b.Trim(minimum))
-                                                   .Select(c => kmeans.Clusters.Nearest(c));
-
-            return normalEncoded.Zip(arrhythmiasEncoded, 
-                                    (n, a) => new QuantizedWaveforms()
-                                                                    {
-                                                                        Normal = n,
-                                                                        Arrhythmias = a
-                                                                    });
-
-            //var normalEncoded = codebook.Take(this.NormalRhythms.Count()).ToArray();
-            //var arrhythmiasEncoded = codebook.Skip(this.NormalRhythms.Count()).Take(this.Arrhythmias.Count()).ToArray();
-
-            //return new QuantizedWaveforms
-            //{
-            //    Normal = normalEncoded,
-            //    Arrhythmias = arrhythmiasEncoded
-            //};
+            return trimmed.Select(s => Encode(s)).ToArray();
         }
 
+
+        /// <summary>
+        /// Given a collection of WaveformReadings, trims each instance down to this.minimumWaveformLength, then
+        /// converts the entire collection of readings to a double[][] representation necessary. 
+        /// </summary>
+        /// <param name="waveformSequence"></param>
+        /// <returns></returns>
+        private double[][] AsTrimmedArray(IEnumerable<WaveformReadings> waveformSequence)
+        {
+            return waveformSequence.Select(a => a.AsArray()).ToArray().Trim(this.maximumWaveformLength);
+        }
+
+
+        /// <summary>
+        /// Given an array that represents ECG signal data, maps it to its code representation using
+        /// this.kmeans to find its centroid.  Assumes that Learn has already been called so that this.kmeans
+        /// contains the clusters.  
+        /// </summary>
+        /// <param name="readings"></param>
+        /// <returns></returns>
+        private int Encode(double[] readings)
+        {
+            return this.kmeans.Clusters.Nearest(readings);
+        }
     }
-
-    public class QuantizedWaveforms
-    {
-        public int[] Normal { get; set; }
-
-        public int[] Arrhythmias { get; set; }
-    }      
 }
