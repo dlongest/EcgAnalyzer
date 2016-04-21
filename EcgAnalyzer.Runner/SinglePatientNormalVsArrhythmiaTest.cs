@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EcgAnalyzer.Extensions;
 
 namespace EcgAnalyzer.Runner
 {
@@ -17,10 +18,11 @@ namespace EcgAnalyzer.Runner
             this.arrhythmiaDirectories = arrhythmiaDirectories;
         }
 
-        public override void Run()
+        public override void Run(WaveformModelParameters parameters)
         {
 
-            Console.WriteLine("Running classifier for a single patient's normal rhythms vs. arrhythmias...");
+            Console.WriteLine("Single Patient Classifier: Normal Rhythms vs. Arrhythmias");
+            Console.WriteLine("States = {0} | Symbols = {1}", parameters.States, parameters.Symbols);
 
             // For each directory, we expand it into the files contained within the directory
             var normalFiles = this.normalRhythmDirectories.Select(dir => System.IO.Directory.EnumerateFiles(dir));
@@ -38,16 +40,52 @@ namespace EcgAnalyzer.Runner
             // normalRhythms.First() and arrRhythms.First() select the very first collection of WaveformReadings.  These are presumed to be all
             // the WaveformReadings for a single patient of that rhythm type.  We then select 10 of those to use for training purposes.  The remainder
             // of the readings are then available for validation purposes. 
-            var classifier = new WaveformModelBuilder().AddRhythms(1, normalRhythms.First().Take(10))
-                                                       .AddRhythms(2, arrRhythms.First().Take(10))
-                                                       .WithModelParameters(5, 5)
-                                                       .Build();
 
-            classifier.Learn();
+            foreach (var trainingSequenceLength in parameters.TrainingSequenceLength)
+            {
+                Console.WriteLine("Training Sequence Length = {0}", trainingSequenceLength);
 
-            WriteExpectedVsPredicted(1, classifier.Predict(normalRhythms.First().Skip(10).Take(3)));
-            WriteExpectedVsPredicted(2, classifier.Predict(arrRhythms.First().Skip(10).Take(3)));
-            WriteSpacer();
+                var classifier = new WaveformModelBuilder().AddRhythms(1, normalRhythms.First().Take(trainingSequenceLength))
+                                                           .AddRhythms(2, arrRhythms.First().Take(trainingSequenceLength))
+                                                           .WithModelParameters(parameters.States, parameters.Symbols)
+                                                           .Build();
+
+                classifier.Learn();
+                foreach (var group in normalRhythms.First().TakeNext(trainingSequenceLength, 3))
+                {
+                    WriteExpectedVsPredicted(1, classifier.Predict(normalRhythms.First().Skip(trainingSequenceLength).Take(3)));
+                    WriteExpectedVsPredicted(2, classifier.Predict(arrRhythms.First().Skip(trainingSequenceLength).Take(3)));
+                    WriteSpacer();
+                }
+
+                WriteSpacer();
+            }
         }
+    }
+
+    public class WaveformModelParameters
+    {
+        private readonly IEnumerable<int> trainingSequenceLengths;
+
+        public WaveformModelParameters()
+        {
+            this.trainingSequenceLengths = Enumerable.Range(5, 7);
+        }
+
+        public WaveformModelParameters(params int[] trainingSequenceLengths)
+        {
+            this.trainingSequenceLengths = trainingSequenceLengths;
+        }
+        public int States { get; set; }
+
+        public int Symbols { get; set; }
+        
+        public IEnumerable<int> TrainingSequenceLength
+        {
+            get
+            {
+                return this.trainingSequenceLengths;
+            }
+        }       
     }
 }

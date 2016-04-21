@@ -135,5 +135,19 @@ namespace EcgAnalyzer.Extensions
 
             return Enumerable.Range(startIndex, count).Select(a => ar[a]);
         }
+
+        public static IEnumerable<IEnumerable<T>> TakeNext<T>(this IEnumerable<T> source, int skip, int perGroup)
+        {
+            var remainder = source.Skip(skip);
+
+            var nextGroup = remainder.Take(perGroup);
+
+            while (nextGroup.Count() == perGroup)
+            {
+                yield return nextGroup;
+                remainder = remainder.Skip(1);
+                nextGroup = remainder.Take(perGroup);
+            }
+        }
     }
 }

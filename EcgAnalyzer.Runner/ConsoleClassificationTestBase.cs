@@ -8,11 +8,13 @@ namespace EcgAnalyzer.Runner
 {
     public abstract class ConsoleClassificationTestBase : IClassificationTest
     {
-        public abstract void Run();
+        public abstract void Run(WaveformModelParameters parameters);
 
         protected virtual void WriteExpectedVsPredicted(int expected, int predicted)
         {
-            Console.WriteLine("Expected = {0} || Predicted = {1}", expected, predicted);
+            var message = expected == predicted ? "CORRECT" : "WRONG";
+
+            Console.WriteLine("Expected = {0} || Predicted = {1} || {2}", expected, predicted, message);
         }
 
         protected virtual void WriteSpacer()

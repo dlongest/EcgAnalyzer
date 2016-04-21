@@ -62,5 +62,27 @@ namespace EcgAnalyzer.Tests
             Assert.Collection(bundles.ElementAt(1), a => Assert.Equal(2, a), a => Assert.Equal(3, a), a => Assert.Equal(4, a));
             Assert.Collection(bundles.Last(), a => Assert.Equal(3, a), a => Assert.Equal(4, a), a => Assert.Equal(5, a));
         }
+
+        [Fact]
+        public void TakeNext_ReturnsCorrectNumberOfGroups()
+        {
+            var ar = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            var groups = ar.TakeNext(4, 3);
+
+            Assert.Equal(3, groups.Count());          
+        }
+
+        [Fact]
+        public void TakeNext_ReturnsCorrectGroupsOfRecords()
+        {
+            var ar = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+            var groups = ar.TakeNext(4, 3);
+
+            Assert.Collection(groups.First(), a => Assert.Equal(5, a), a => Assert.Equal(6, a), a => Assert.Equal(7, a));
+            Assert.Collection(groups.ElementAt(1), a => Assert.Equal(6, a), a => Assert.Equal(7, a), a => Assert.Equal(8, a));
+            Assert.Collection(groups.Last(), a => Assert.Equal(7, a), a => Assert.Equal(8, a), a => Assert.Equal(9, a));
+        }
     }
 }

@@ -8,6 +8,6 @@ namespace EcgAnalyzer.Runner
 {
     public interface IClassificationTest
     {
-        void Run();
+        void Run(WaveformModelParameters parameters);
     }
 }

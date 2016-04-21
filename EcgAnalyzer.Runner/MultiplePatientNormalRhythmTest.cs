@@ -15,7 +15,7 @@ namespace EcgAnalyzer.Runner
             this.patientCsvRhythmDirectories = patientCsvRhythmDirectories;
         }
 
-        public override void Run()
+        public override void Run(WaveformModelParameters parameters)
         {
             Console.WriteLine("Running multiple patient classifer that will attempt to predict which patient sourced each normal rhythm sequence...");
 
