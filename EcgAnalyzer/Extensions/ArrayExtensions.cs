@@ -149,5 +149,34 @@ namespace EcgAnalyzer.Extensions
                 nextGroup = remainder.Take(perGroup);
             }
         }
+        
+        public static int MaximumSharedLength(params IEnumerable<WaveformReadings>[] sequence)
+        {
+            return sequence.Select(a => a.Count()).Min();
+        }
+
+        public static int MaximumSharedLength(this IEnumerable<WaveformReadings> sequence)
+        {
+            return sequence.Select(a => a.Count()).Min();
+        }
+
+        public static IEnumerable<WaveformReadings> ShapeToMaximumSharedLength(this IEnumerable<WaveformReadings> waveformSequences)
+        {
+            var maximumSharedLength = waveformSequences.Select(a => a.Count()).Min();
+
+            return waveformSequences.ShapeToMaximumSharedLength(maximumSharedLength);
+        }
+
+        public static IEnumerable<WaveformReadings> ShapeToMaximumSharedLength(this IEnumerable<WaveformReadings> waveformSequences,
+                                                                               int maximumSharedLength)
+        {
+            return waveformSequences.Select(a => a.Subset(0, maximumSharedLength)).Select(a => new WaveformReadings(a));
+        }
+
+        public static IEnumerable<IEnumerable<WaveformReadings>> ShapeToMaximumSharedLength(this IEnumerable<IEnumerable<WaveformReadings>> sequences, 
+                                                                                            int maximumSharedLength)
+        {
+            return sequences.Select(a => a.Subset(0, maximumSharedLength));
+        }
     }
 }

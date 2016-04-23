@@ -93,6 +93,9 @@ namespace EcgAnalyzer
         /// <returns></returns>
         public IDictionary<int, int[]> ClusterAll(KMeans kmeans)
         {
+            // Here's a problem: we're going to cluster based on the training sequence, but suppose a 
+            // test sequence is shorter than the training sequences? Then the waveform length is wrong
+            // but it's too late to do anything about it.  
             var combined = this.Combine().AsArray();
             this.maximumWaveformLength = combined.MinimumWaveformLength();
             var trimmed = combined.Trim(this.maximumWaveformLength);

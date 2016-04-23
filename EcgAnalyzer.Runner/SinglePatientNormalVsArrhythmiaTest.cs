@@ -31,9 +31,11 @@ namespace EcgAnalyzer.Runner
             // Here we're taking all of the files we found in the directories and converting them into 
             // a collection of a collectio of WaveformReadings.  Each file contains the signal data for one set of patient rhythms.
             // In other words, a file == an instance of WaveformReadings.  The directory can have multiple files hence multiple WaveformReadings.
-            // Since we have multiple directories, we have multiple collections of WaveformReadings.  
+            // Since we have multiple directories, we have multiple collections of WaveformReadings.             
             var normalRhythms = normalFiles.Select(f => WaveformReadings.CreateWaveformReadingsFromPatientFiles(f, tokens => CreateWaveformReadingFromCsvTokens(tokens)));
             var arrRhythms = arrFiles.Select(f => WaveformReadings.CreateWaveformReadingsFromPatientFiles(f, tokens => CreateWaveformReadingFromCsvTokens(tokens)));
+
+            int availableTestRhythmCount = normalRhythms.Count() < arrRhythms.Count() ? arrRhythms.Count() : normalRhythms.Count();
 
             // In the below code, we're generating a model with 5 states and 5 symbols and using a training sequence
             // of 10 rhythms.  We need to vary all of those for results generation.  
@@ -41,25 +43,55 @@ namespace EcgAnalyzer.Runner
             // the WaveformReadings for a single patient of that rhythm type.  We then select 10 of those to use for training purposes.  The remainder
             // of the readings are then available for validation purposes. 
 
-            foreach (var trainingSequenceLength in parameters.TrainingSequenceLength)
+            foreach (var patient in Enumerable.Range(0, availableTestRhythmCount))
             {
-                Console.WriteLine("Training Sequence Length = {0}", trainingSequenceLength);
+                Console.WriteLine("Evaluating Patient {0}", patient + 1);
 
-                var classifier = new WaveformModelBuilder().AddRhythms(1, normalRhythms.First().Take(trainingSequenceLength))
-                                                           .AddRhythms(2, arrRhythms.First().Take(trainingSequenceLength))
-                                                           .WithModelParameters(parameters.States, parameters.Symbols)
-                                                           .Build();
+                int maximumSharedLength = WaveformReadings.MaximumSharedLength(normalRhythms.ElementAt(patient), arrRhythms.ElementAt(patient));
 
-                classifier.Learn();
-                foreach (var group in normalRhythms.First().TakeNext(trainingSequenceLength, 3))
+                var patientNormalRhythms = normalRhythms.ElementAt(patient).ShapeToMaximumSharedLength(maximumSharedLength);
+                var patientArrhythmias = arrRhythms.ElementAt(patient).ShapeToMaximumSharedLength(maximumSharedLength);
+
+                foreach (var trainingSequenceLength in parameters.TrainingSequenceLength)
                 {
-                    WriteExpectedVsPredicted(1, classifier.Predict(normalRhythms.First().Skip(trainingSequenceLength).Take(3)));
-                    WriteExpectedVsPredicted(2, classifier.Predict(arrRhythms.First().Skip(trainingSequenceLength).Take(3)));
+                    Console.WriteLine("Training Sequence Length = {0}", trainingSequenceLength);
+
+                    var classifier = new WaveformModelBuilder().AddRhythms(1, patientNormalRhythms.Take(trainingSequenceLength))
+                                                               .AddRhythms(2, patientArrhythmias.Take(trainingSequenceLength))
+                                                               .WithModelParameters(parameters.States, parameters.Symbols)
+                                                               .Build();
+
+                    classifier.Learn();
+
+                    EvaluateRhythms(patientNormalRhythms, classifier, 1, trainingSequenceLength, 3, "Evaluating Patient Normal Rhythms...");
+                    EvaluateRhythms(patientArrhythmias, classifier, 2, trainingSequenceLength, 3, "Evaluating Patient Arrhythmias...");
+
                     WriteSpacer();
                 }
-
-                WriteSpacer();
+                Console.WriteLine("Patient Complete!\n");
             }
+        }
+
+        private void EvaluateRhythms(IEnumerable<WaveformReadings> testSequence, 
+                                     WaveformModels classifier,
+                                     int expectedLabel,
+                                     int trainingSequenceLength, int testSequenceLength,
+                                     string message)
+        {
+            Console.WriteLine(message);
+            foreach (var group in testSequence.TakeNext(trainingSequenceLength, testSequenceLength))
+            {
+                WriteExpectedVsPredicted(expectedLabel, classifier.Predict(testSequence.Skip(trainingSequenceLength).Take(testSequenceLength)));               
+            }
+
+            WriteSpacer();
+        }
+
+        private IEnumerable<IEnumerable<WaveformReadings>> ShapeSequencesToMaximumSharedLength(params IEnumerable<WaveformReadings>[] sequences)
+        {
+            int maximumSharedLength = WaveformReadings.MaximumSharedLength(sequences);
+
+            return sequences.ShapeToMaximumSharedLength(maximumSharedLength);
         }
     }
 

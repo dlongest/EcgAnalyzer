@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EcgAnalyzer.Extensions;
 
 namespace EcgAnalyzer
 {
@@ -18,6 +19,11 @@ namespace EcgAnalyzer
         public WaveformReadings()
         {
             this.readings = new List<WaveformReading>();
+        }
+
+        internal WaveformReadings(IEnumerable<WaveformReading> readings)
+        {
+            this.readings = readings.ToList();
         }
 
         public void Add(WaveformReading reading)
@@ -68,5 +74,25 @@ namespace EcgAnalyzer
 
             return readings;
         }
+
+        public static int MaximumSharedLength(params IEnumerable<IEnumerable<WaveformReadings>>[] sequence)
+        {
+            var s = sequence.Select(a => a.Select(b => b.MaximumSharedLength()).Min()).Min();
+
+            return s;
+        }
+
+        public static int MaximumSharedLength(params IEnumerable<WaveformReadings>[] sequence)
+        {
+            var s = sequence.Select(a => a.Select(b => b.Count()).Min()).Min();
+
+            return s;
+        }
+        
+
+        //public static int MaximumSharedLength(IEnumerable<IEnumerable<WaveformReadings>> sequences)
+        //{
+        //    return sequences.Select(a => a.Count()).Min();
+        //}
     }
 }
